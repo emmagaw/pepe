@@ -1,0 +1,83 @@
+---
+title: "Final Project"
+author: "Eric M"
+date: "2024-12-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(readxl)
+library(wordcloud)
+library(tm)
+library(mdsr)
+```
+```{r}
+pepe_data=read_excel("C:/Users/magaw/OneDrive/Desktop/DATA 211/Pepe Data.xlsx")
+```
+
+Testing whether my dog, Penelope, barks significantly more at origins of noises or movement, based on whether they occur inside or our outside of my apartment.
+
+## Word Cloud
+```{r}
+text_df2=as.data.frame(pepe_data$Reason)
+vector_pepe=VectorSource(text_df2)
+corp_pepe=Corpus(vector_pepe)
+
+text_mining=corp_pepe%>%
+  tm_map(content_transformer(tolower))%>%
+  tm_map(removeNumbers)%>%
+  tm_map(removePunctuation)%>%
+  tm_map(stripWhitespace)%>%
+  TermDocumentMatrix()%>%
+  as.matrix()
+
+text_freq=sort(rowSums(text_mining),decreasing=TRUE)
+text_freqDF=as.data.frame(text_freq)
+text_freqDF
+wordcloud(rownames(text_freqDF),text_freqDF$text_freq,colors=brewer.pal(11,'Dark2'))
+```
+## Bar Graph
+```{r}
+positions<-c('Mon','Tue','Wed','Thu','Fri','Sat','Sun')
+
+pepe_graph=pepe_data%>%
+  ggplot(aes(fill=`Inside/Outside`,x=DoW))+
+  geom_bar()+
+  scale_x_discrete(labels=positions)+
+  theme(axis.text.x=element_text(angle=65,hjust=1))
+  
+pepe_graph
+```
+
+
+## Hypothesis Testing
+$H_0: \mu_I=\mu_O$
+$H_a: \mu_I\neq\mu_O$
+
+Where 
+
+$\mu_I=$ mean number of barks at inside sources
+$\mu_U=$ mean number of barks at outside sources
+```{r}
+inside_count=c(3,5,5,7,5,4,6,4,3,4,3,6,4,3)
+outside_count=c(2,1,2,3,1,2,1,3,1,0,1,3,1,1)
+
+t.test(outside_count,inside_count,alternative="two.sided")
+```
+Conclusion:
+p-value=6.29e-7<0.05=$\alpha$
+
+Therefore we reject $H_0$. 
+
+At $5\%$ significance level, there is evidence to support the claim that the mean number of barks between inside and outside sources are significantly different.
+
+##Final Thoughts
+During this research it was was interesting to see the sources that cause Penelope to bark. Doors seem to be a large trigger, but only when they are opened and not closed. My wife and roommate being close in total numbers of barks was unexpected. My roommate is likely Penelope's favorite person, however he works overnight shifts so him opening the front door did not cause her to bark, but entering/exiting his room was a main contributor. My wife on the other hand caused more barks at the front door, which I presume is due to her work schedule having her return during time the dogs are not either in bed or in their kennels.
+
+Also while inside sources had a much larger amount of barks, I believe a contributing factor was the time at which the research was conducted. Beginning at the end of November, about the time we began keeping our windows closed, may have skewed the data in one direction. My apartment is sub-ground as well, so being a chihuahua Penelope does not have easy access to seeing out the windows, causing her to react mostly to noises outside.
